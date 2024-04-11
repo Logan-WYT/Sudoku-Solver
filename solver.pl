@@ -30,12 +30,6 @@ initial_cells(Cells) :-
             (between(1, 9, R), between(1, 9, C)),
             Cells).
 
-%% Print the final state of the Sudoku.
-print_sudoku([]).
-print_sudoku([cell(R,C,V) | Cells]) :-
-    write(cell(R,C,V)), nl,
-    print_sudoku(Cells).
-
 %% The main backtracking solver function
 solve_sudoku([], []).
 solve_sudoku([cell(Row, Col, Values) | Rest], [cell(Row, Col, Value) | Solution]) :-
@@ -58,14 +52,19 @@ valid_choice(Row, Col, Value, Cells) :-
     not(member(Value, Block)).
 
 %% Apply a choice by removing the value from potential values of all related cells.
-apply_choice(Row, Col, Value, Cells, NewCells) :-
-    maplist(remove_value(Row, Col, Value), Cells, NewCells).
+% apply_choice(Row, Col, Value, Cells, NewCells) :-
+%     maplist(remove_value(Row, Col, Value), Cells, NewCells).
 
-remove_value(Row, _, Value, cell(Row, C, Values), cell(Row, C, NewValues)) :-
+apply_choice(Row, Col, Value, Cells, NewCells) :-
+    block_size(BSize),
+    RowStart is ((Row - 1) div BSize) * BSize + 1,
+    ColStart is ((Col - 1) div BSize) * BSize + 1,
+    maplist(remove_value(Row, Col, Value, RowStart, ColStart, BSize), Cells, NewCells).
+
+remove_value(Row, Col, Value, RowStart, ColStart, BSize, cell(R, C, Values), cell(R, C, NewValues)) :-
+    (R = Row; C = Col; (R >= RowStart, R < RowStart + BSize, C >= ColStart, C < ColStart + BSize)),
     !, delete(Values, Value, NewValues).
-remove_value(_, Col, Value, cell(R, Col, Values), cell(R, Col, NewValues)) :-
-    !, delete(Values, Value, NewValues).
-remove_value(_, _, _, Cell, Cell).
+remove_value(_, _, _, _, _, _, Cell, Cell).
 
 %% Example of starting the solver
 ?- initial_cells(Cells), initialize(Cells, Sudoku), solve(Sudoku, Solution), display_board(Solution).
