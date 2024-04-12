@@ -2,20 +2,6 @@
 :- [display4].
 :- [boards4].
 
-% Read and Validate Sudoku Grid from User Input
-read_sudoku(Grid) :-
-    write('Enter the entire Sudoku grid as a nested list [[Row1], [Row2], ..., [Row9]] (use 0 for blanks): '),
-    read(Term),
-    (   is_valid_grid(Term) -> Grid = Term ; write('Invalid input, please enter a nested list of 9 rows, each with 9 numbers (0-9).\\n'), read_sudoku(Grid) ).
-
-is_valid_grid(Grid) :-
-    length(Grid, 9),
-    maplist(valid_row, Grid).
-
-valid_row(Row) :-
-    length(Row, 9),
-    maplist(between(0, 9), Row).
-
 sudoku(Board) :-
     flatten(Board, FlattenBoard), FlattenBoard ins 1..9, % Assert that the values are between 1 and 9
     row_constraint(Board), 
