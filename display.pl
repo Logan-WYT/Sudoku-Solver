@@ -1,5 +1,3 @@
-:- module(display, [display_board/1]).
-
 display_board(Board) :-
     findall(Value, member(cell(1, _, Value), Board), R1),
     findall(Value, member(cell(2, _, Value), Board), R2),
