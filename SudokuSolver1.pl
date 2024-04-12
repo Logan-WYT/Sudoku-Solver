@@ -1,7 +1,6 @@
 :- use_module(library(clpfd)).
-:- use_module(library(lists)).
-:- use_module(library(dcgs)).
-:- use_module(library(format)).
+:- [display4].
+:- [boards4].
 
 % Read and Validate Sudoku Grid from User Input
 read_sudoku(Grid) :-
@@ -17,72 +16,44 @@ valid_row(Row) :-
     length(Row, 9),
     maplist(between(0, 9), Row).
 
+sudoku(Board) :-
+    flatten(Board, FlattenBoard), FlattenBoard ins 1..9, % Assert that the values are between 1 and 9
+    row_constraint(Board), 
+    column_constraint(Board), 
+    box_constraint(Board).
 
-% Constraint Posting for Sudoku
-sudoku(Rows) :-
-    length(Rows, 9), maplist(same_length(Rows), Rows),
-    append(Rows, Vs), Vs ins 1..9,
-    maplist(all_distinct, Rows),
-    transpose(Rows, Columns), maplist(all_distinct, Columns),
-    Rows = [As,Bs,Cs,Ds,Es,Fs,Gs,Hs,Is],
-    blocks(As, Bs, Cs), blocks(Ds, Es, Fs), blocks(Gs, Hs, Is).
+row_constraint(Board) :-
+    maplist(all_distinct, Board).
 
-blocks([], [], []).
-blocks([N1,N2,N3|Ns1], [N4,N5,N6|Ns2], [N7,N8,N9|Ns3]) :-
-    all_distinct([N1,N2,N3,N4,N5,N6,N7,N8,N9]),
-    blocks(Ns1, Ns2, Ns3).
+column_constraint(Board) :-
+    transpose(Board, Columns),
+    maplist(all_distinct, Columns).
 
+box_constraint(Board) :-
+    Board = [Row1, Row2, Row3, Row4, Row5, Row6, Row7, Row8, Row9],
+    box_constraint_helper(Row1, Row2, Row3), 
+    box_constraint_helper(Row4, Row5, Row6), 
+    box_constraint_helper(Row7, Row8, Row9).
+box_constraint_helper([], [], []).
+box_constraint_helper([Box1, Box2, Box3|Rest1], [Box4,Box5,Box6|Rest2], [Box7,Box8,Box9|Rest3]) :-
+    all_distinct([Box1,Box2,Box3,Box4,Box5,Box6,Box7,Box8,Box9]),
+    box_constraint_helper(Rest1, Rest2, Rest3).
 
-%  Main Execution and Display Function
-show(Options, Rows) :-
-    sudoku(Rows),
-    maplist(labeling(Options), Rows),
-    maplist(print_row, Rows).
+flatten(Board, FlattenBoard) :-
+    append(Board, FlattenBoard).
 
-print_row(Row) :-
-    maplist(print_element, Row),
-    nl.
-
-print_element(Elem) :-
-    format(" ~w ", [Elem]).
-
-
-
-
-% Sample problem
-problem(1, P) :- % Beginner level example
-P = [[1,,,8,,4,,,],
-[,2,,,,,4,5,6],
-[,,3,2,,5,,,],
-[,,,4,,,8,,5],
-[7,8,9,,5,,,,],
-[,,,,,6,2,,3],
-[8,,1,,,,7,,],
-[,,,1,2,3,,8,],
-[2,,5,,,,,,9]].
-
-problem(2, P) :- % Intermediate level example
-P = [[,,2,,3,,1,,],
-[,4,,,,,,3,],
-[1,,5,,,,,8,2],
-[,,,2,,,6,5,],
-[9,,,,8,7,,,3],
-[,,,,4,,,,],
-[8,,,,7,,,,4],
-[,9,3,1,,,,6,],
-[,,7,,6,,5,,]].
-
-
-:- initialization(main).
+solve(Board) :-
+    sudoku(Board),
+    display_sudoku(Board).
 
 main :-
-write('Choose a sample problem (1 or 2): '),
-read(ProblemId),
-problem(ProblemId, Grid),
-( ProblemId = 1, ProblemId = 2
--> write('Invalid problem number. Exiting.'), halt
-; write('Solving Sudoku...\n'),
-show([ff], Grid),
-write('Solution complete.'),
-halt
-).
+    write('Choose a sample sudoku board (easy, medium, hard): '),
+    read(BoardDifficculty),
+    board(BoardDifficculty, Board),
+    ( BoardDifficculty = easy, BoardDifficculty = medium, BoardDifficculty = hard
+    -> write('Invalid problem number. Exiting.'), halt
+    ; write('Solving Sudoku...\n'),
+    solve(Board),
+    write('Solution complete.'),
+    halt
+    ).
