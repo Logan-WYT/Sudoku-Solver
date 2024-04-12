@@ -52,10 +52,14 @@ possible_values([1,2,3,4,5,6,7,8,9]).
 solve_state([], []).
 solve_state(Unsolved, [(Row, Col, Value) | Solution]) :-
     format('Solving cell: ~w, ~w\n', [Row, Col]),
-    select_min_remaining_values_cell(Unsolved, cell(Row, Col, [Value]), RestCells),
+    select_min_remaining_values_cell(Unsolved, cell(Row, Col, Values), RestCells),
+    select_values(Values, Value),
     format('Selected Value: ~w for ~w, ~w\n', [Value, Row, Col]),
     forward_check(Row, Col, Value, RestCells, UpdatedRest),
     solve_state(UpdatedRest, Solution).
+
+select_values([Value|_], Value).
+select_values([_|Rest], Value) :- select_values(Rest, Value).
 
 % Predicate: select_min_remaining_values_cell/3
 % Description: Selects the cell with the minimum remaining values.
@@ -63,6 +67,7 @@ solve_state(Unsolved, [(Row, Col, Value) | Solution]) :-
 %  - Cells: The cells in the puzzle.
 %  - MinCell: The cell with the minimum remaining values.
 %  - RestCells: The remaining cells after selecting the minimum cell.
+select_min_remaining_values_cell([], [], []).
 select_min_remaining_values_cell(Cells, MinCell, RestCells) :-
     select(MinCell, Cells, RestCells),
     MinCell = cell(_, _, Values),
@@ -89,7 +94,6 @@ forward_check(Row, Col, Value, Cells, UpdatedCells) :-
 %  - Value: The value to eliminate.
 %  - Cell: The cell to eliminate the value from.
 %  - UpdatedCell: The cell after eliminating the value.
-eliminate_value(_, _, _, cell(R, C, [V]), cell(R, C, [V])).
 eliminate_value(Row, _, Value, cell(Row, Col, Values), cell(Row, Col, NewValues)) :-
     delete(Values, Value, NewValues), !.
 eliminate_value(_, Col, Value, cell(Row, Col, Values), cell(Row, Col, NewValues)) :-
@@ -107,8 +111,12 @@ eliminate_value(_, _, _, Cell, Cell).
 %  - Row2: The row of the second cell.
 %  - Col2: The column of the second cell.
 in_same_block(Row1, Col1, Row2, Col2) :-
-    ((Row1 - 1) // 3) == ((Row2 - 1) // 3),
-    ((Col1 - 1) // 3) == ((Col2 - 1) // 3).
+    BlockRow1 is (Row1 - 1) // 3,
+    BlockCol1 is (Col1 - 1) // 3,
+    BlockRow2 is (Row2 - 1) // 3,
+    BlockCol2 is (Col2 - 1) // 3,
+    BlockRow1 == BlockRow2,
+    BlockCol1 == BlockCol2.
 
 
 % Test Cases
@@ -133,3 +141,37 @@ in_same_block(Row1, Col1, Row2, Col2) :-
 %    ).
 %    FinalState should be [cell(1, 1, [1]), cell(1, 2, [2,3]), cell(2, 1, [2,3]), cell(6, 7, [1,2,3])].
 %    1 should be pruned from cell(1, 2, [1,2,3]) and cell(2, 1, [1,2,3]).
+
+% Test case for solve_state/2
+
+% Test case for select_min_remaining_values_cell/3
+% ?- Cells = [cell(1, 1, [1, 2, 3]), cell(1, 2, [4, 5]), cell(1, 3, [6, 7, 8])],
+%    select_min_remaining_values_cell(Cells, MinCell, RestCells.
+%    MinCell should be cell(1, 2, [4, 5]) and 
+%    RestCells should be [cell(1, 1, [1, 2, 3]), cell(1, 3, [6, 7, 8])].
+% ?- Cells = [cell(1, 1, [1, 2, 3]), cell(1, 2, [4, 5]), cell(1, 3, [6, 7]), cell(1, 4, [8, 9])],
+%    select_min_remaining_values_cell(Cells, MinCell, RestCells)
+%    MinCell should be cell(1, 2, [4, 5]) and
+%    RestCells should be [cell(1, 1, [1, 2, 3]), cell(1, 3, [6, 7]), cell(1, 4, [8, 9])].
+
+% Test case for forward_check/5
+% ?- Cells = [cell(2,1,[1,2,3]),  cell(1,2,[1,2]), cell(1,3,[1,2,3,4]), cell(2, 2, [1,2,3]), cell(7, 7, [1,2,3])], 
+%    forward_check(1, 1, 1, Cells, U).
+%    U should be [cell(2,1,[2,3]), cell(1,2,[2]), cell(1,3,[2,3,4]), cell(2, 2, [2,3]), cell(7, 7, [1,2,3])].
+
+% Test case for eliminate_value/5
+% ?- eliminate_value(1, 1, 3, cell(2,1,[1,2,3,4,5]), UpdatedCell).
+% UpdatedCell should be cell(2,1,[1,2,4,5]).
+% ?- eliminate_value(1, 1, 3, cell(1,9,[1,2,3,4,5]), UpdatedCell).
+% UpdatedCell should be cell(1,9,[1,2,4,5]).
+% ?- eliminate_value(1, 1, 3, cell(3,3,[1,2,3,4,5]), UpdatedCell).
+% UpdatedCell should be cell(3,3,[1,2,4,5]).
+
+% Test case for in_same_block/4
+% ?- in_same_block(1, 1, 1, 1). % Should be true
+% ?- in_same_block(1, 1, 1, 2). % Should be true
+% ?- in_same_block(1, 1, 1, 3). % Should be true
+% ?- in_same_block(1, 1, 3, 3). % Should be true
+% ?- in_same_block(1, 1, 4, 3). % Should be false
+% ?- in_same_block(1, 1, 3, 4). % Should be false
+% ?- in_same_block(1, 1, 9, 9). % Should be false
